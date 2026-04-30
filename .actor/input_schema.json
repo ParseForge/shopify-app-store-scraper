@@ -1,0 +1,32 @@
+{
+  "title": "Shopify App Store Scraper",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "maxItems": {
+      "title": "Max Items",
+      "type": "integer",
+      "description": "Free users: Limited to 10 items (preview). Paid users: Optional, max 1,000,000.",
+      "editor": "number",
+      "prefill": 10,
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "keywordFilter": {
+      "title": "Keyword filter (optional)",
+      "type": "string",
+      "description": "Only return apps whose slug contains this substring. Examples: seo, email, shipping, review.",
+      "editor": "textfield",
+      "prefill": "seo",
+      "sectionCaption": "Search",
+      "sectionDescription": "Discovery is sitemap-based. Use the keyword filter to narrow the slugs returned."
+    },
+    "appSlugs": {
+      "title": "App slugs (optional)",
+      "type": "array",
+      "description": "Specific app slugs to fetch directly (the part after apps.shopify.com/). When provided, sitemap discovery is skipped.",
+      "editor": "stringList"
+    }
+  },
+  "required": []
+}

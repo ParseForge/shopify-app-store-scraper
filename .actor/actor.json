@@ -1,0 +1,10 @@
+{
+  "actorSpecification": 1,
+  "name": "shopify-app-store-scraper",
+  "title": "Shopify App Store Scraper",
+  "description": "Pull Shopify app data: name, developer, rating, review count, pricing plans, description, and category. Discover apps via sitemap and filter by keyword. Export to JSON, CSV, or Excel for ecosystem research and competitive analysis.",
+  "version": "1.0",
+  "buildTag": "latest",
+  "dockerfile": "./Dockerfile",
+  "input": "./input_schema.json"
+}
