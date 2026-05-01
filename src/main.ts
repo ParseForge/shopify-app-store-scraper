@@ -94,9 +94,20 @@ async function listSlugs(): Promise<string[]> {
 async function fetchApp(slug: string): Promise<Record<string, unknown> | null> {
     const url = `https://apps.shopify.com/${slug}`;
     try {
-        const r = await fetch(url, { headers: HEADERS });
-        if (!r.ok) return null;
-        const html = await r.text();
+        let html = '';
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            const r = await fetch(url, { headers: HEADERS });
+            if (r.ok) {
+                html = await r.text();
+                if (html.length > 1000) break;
+            }
+            if (r.status === 429 || r.status === 503) {
+                await new Promise((res) => setTimeout(res, 500 * attempt));
+                continue;
+            }
+            if (!r.ok) return null;
+        }
+        if (!html) return null;
         const $ = cheerio.load(html);
 
         let ld: any = null;
@@ -153,7 +164,7 @@ if (directSlugs.length > 0) {
 let pushed = 0;
 const overfetchCap = Math.min(candidateSlugs.length, effectiveMaxItems * 3);
 const slugsToFetch = candidateSlugs.slice(0, overfetchCap);
-const CONCURRENCY = 12;
+const CONCURRENCY = 5;
 const results: Array<Record<string, unknown> | null> = new Array(slugsToFetch.length).fill(null);
 let cursor = 0;
 let validCount = 0;
