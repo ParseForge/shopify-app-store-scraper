@@ -54,18 +54,41 @@ const HEADERS = {
 
 async function listSlugs(): Promise<string[]> {
     log.info('📡 Loading sitemap…');
-    const r = await fetch('https://apps.shopify.com/sitemap.xml', { headers: HEADERS });
-    if (!r.ok) return [];
-    const xml = await r.text();
-    const slugs: string[] = [];
-    const re = /<loc>https:\/\/apps\.shopify\.com\/([a-z0-9_-]+)<\/loc>/g;
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(xml)) !== null) {
-        const slug = m[1]!;
-        if (slug === 'sitemap' || slug === 'instant-search' || slug === 'partners' || slug === 'support') continue;
-        slugs.push(slug);
+    for (let attempt = 1; attempt <= 4; attempt++) {
+        try {
+            const r = await fetch('https://apps.shopify.com/sitemap.xml', {
+                headers: {
+                    ...HEADERS,
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'Cache-Control': 'no-cache',
+                },
+            });
+            if (!r.ok) {
+                log.warning(`   sitemap HTTP ${r.status} (attempt ${attempt}/4)`);
+                await new Promise((res) => setTimeout(res, 1500 * attempt));
+                continue;
+            }
+            const xml = await r.text();
+            if (xml.length < 1000) {
+                log.warning(`   sitemap thin response ${xml.length}B (attempt ${attempt}/4)`);
+                await new Promise((res) => setTimeout(res, 1500 * attempt));
+                continue;
+            }
+            const slugs: string[] = [];
+            const re = /<loc>https:\/\/apps\.shopify\.com\/([a-z0-9_-]+)<\/loc>/g;
+            let m: RegExpExecArray | null;
+            while ((m = re.exec(xml)) !== null) {
+                const slug = m[1]!;
+                if (slug === 'sitemap' || slug === 'instant-search' || slug === 'partners' || slug === 'support') continue;
+                slugs.push(slug);
+            }
+            return slugs;
+        } catch (err: any) {
+            log.warning(`   sitemap fetch error: ${err.message} (attempt ${attempt}/4)`);
+            await new Promise((res) => setTimeout(res, 1500 * attempt));
+        }
     }
-    return slugs;
+    return [];
 }
 
 async function fetchApp(slug: string): Promise<Record<string, unknown> | null> {
