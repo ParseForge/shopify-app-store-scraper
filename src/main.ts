@@ -151,18 +151,23 @@ if (directSlugs.length > 0) {
 }
 
 let pushed = 0;
-const slugsToFetch = candidateSlugs.slice(0, effectiveMaxItems);
+const overfetchCap = Math.min(candidateSlugs.length, effectiveMaxItems * 3);
+const slugsToFetch = candidateSlugs.slice(0, overfetchCap);
 const CONCURRENCY = 12;
 const results: Array<Record<string, unknown> | null> = new Array(slugsToFetch.length).fill(null);
 let cursor = 0;
+let validCount = 0;
 async function appWorker() {
-    while (cursor < slugsToFetch.length) {
+    while (cursor < slugsToFetch.length && validCount < effectiveMaxItems) {
         const i = cursor++;
-        results[i] = await fetchApp(slugsToFetch[i]!);
+        const rec = await fetchApp(slugsToFetch[i]!);
+        results[i] = rec;
+        if (rec) validCount += 1;
     }
 }
 await Promise.all(Array.from({ length: CONCURRENCY }, () => appWorker()));
 for (const rec of results) {
+    if (pushed >= effectiveMaxItems) break;
     if (rec) {
         const item = { ...rec, scrapedAt: new Date().toISOString() };
         if (isPayPerEvent) await Actor.pushData([item], 'result-item');
