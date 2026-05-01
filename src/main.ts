@@ -151,17 +151,24 @@ if (directSlugs.length > 0) {
 }
 
 let pushed = 0;
-for (const slug of candidateSlugs) {
-    if (pushed >= effectiveMaxItems) break;
-    log.info(`📡 ${slug}`);
-    const rec = await fetchApp(slug);
+const slugsToFetch = candidateSlugs.slice(0, effectiveMaxItems);
+const CONCURRENCY = 12;
+const results: Array<Record<string, unknown> | null> = new Array(slugsToFetch.length).fill(null);
+let cursor = 0;
+async function appWorker() {
+    while (cursor < slugsToFetch.length) {
+        const i = cursor++;
+        results[i] = await fetchApp(slugsToFetch[i]!);
+    }
+}
+await Promise.all(Array.from({ length: CONCURRENCY }, () => appWorker()));
+for (const rec of results) {
     if (rec) {
         const item = { ...rec, scrapedAt: new Date().toISOString() };
         if (isPayPerEvent) await Actor.pushData([item], 'result-item');
         else await Actor.pushData([item]);
         pushed += 1;
     }
-    await new Promise((r) => setTimeout(r, 300));
 }
 
 if (pushed === 0) await Actor.pushData([{ error: 'No Shopify apps matched.' }]);
