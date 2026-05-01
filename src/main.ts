@@ -164,7 +164,7 @@ if (directSlugs.length > 0) {
 let pushed = 0;
 const overfetchCap = Math.min(candidateSlugs.length, effectiveMaxItems * 3);
 const slugsToFetch = candidateSlugs.slice(0, overfetchCap);
-const CONCURRENCY = 8;
+const CONCURRENCY = 5;
 const results: Array<Record<string, unknown> | null> = new Array(slugsToFetch.length).fill(null);
 let cursor = 0;
 let validCount = 0;
